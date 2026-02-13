@@ -286,18 +286,30 @@ public sealed class MockServiceProvider : IServiceProvider
         Type listType = typeof (List<>).MakeGenericType(typeArgument);
         instance = Activator.CreateInstance(listType)!;
 
+        MethodInfo addMethod =
+            listType.GetMethod(nameof (List<Object>.Add))!;
+
+        Object?[]? arguments = new Object?[1] { null };
+
         if (this._instances.TryGetValue(typeArgument, out services))
         {
-            MethodInfo addMethod =
-                listType.GetMethod(nameof (List<Object>.Add))!;
-
-            Object?[]? arguments = new Object?[1] { null };
-
             foreach (Object service in services)
             {
                 arguments[0] = service;
                 addMethod.Invoke(instance, arguments);
             }
+        }
+
+        IEnumerable<Object> implementationInstances =
+            this._services
+                .Where(s => s.ServiceType.Equals(typeArgument))
+                .Select(s => s.ImplementationInstance)
+                .OfType<Object>();
+
+        foreach (Object implementationInstance in implementationInstances)
+        {
+            arguments[0] = implementationInstance;
+            addMethod.Invoke(instance, arguments);
         }
 
         return true;
