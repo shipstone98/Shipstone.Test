@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -217,17 +218,36 @@ public sealed class MockServiceProvider : IServiceProvider
         }
 
         Type closedType = typeof (MockOptions<>).MakeGenericType(typeArgument);
-
-        Type[] constructorTypes =
-            new Type[1] { closedType.GenericTypeArguments[0] };
+        Type[] constructorTypes = Array.Empty<Type>();
 
         ConstructorInfo? constructor =
-            closedType.GetConstructor(
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                constructorTypes
-            );
+            closedType.GetConstructor(constructorTypes);
 
-        return constructor?.Invoke(arguments);
+        if (constructor is null)
+        {
+            return null;
+        }
+
+        Object? optionsInstance = constructor.Invoke(null);
+
+        if (optionsInstance is null)
+        {
+            return null;
+        }
+
+        FieldInfo? field = closedType.GetField("_valueFunc");
+
+        if (field is null)
+        {
+            return null;
+        }
+
+        Type funcType = typeof (Func<>).MakeGenericType(typeArgument);
+        Expression constant = Expression.Constant(instance, typeArgument);
+        LambdaExpression lambda = Expression.Lambda(funcType, constant);
+        Object lambdaCompiled = lambda.Compile();
+        field.SetValue(optionsInstance, lambdaCompiled);
+        return optionsInstance;
     }
 
     private bool TryGetEnumerable(Type serviceType, out Object? instance)
