@@ -9,11 +9,13 @@ namespace Shipstone.Test.Mocks;
 
 public sealed class MockHttpContext : HttpContext
 {
+    public Func<ConnectionInfo> _connectionFunc;
+    public Func<HttpRequest> _requestFunc;
     public Func<IServiceProvider> _requestServicesFunc;
+    public Func<HttpResponse> _responseFunc;
     public Func<ClaimsPrincipal> _userFunc;
 
-    public sealed override ConnectionInfo Connection =>
-        throw new NotImplementedException();
+    public sealed override ConnectionInfo Connection => this._connectionFunc();
 
     public sealed override IFeatureCollection Features =>
         throw new NotImplementedException();
@@ -24,8 +26,7 @@ public sealed class MockHttpContext : HttpContext
         set => throw new NotImplementedException();
     }
 
-    public sealed override HttpRequest Request =>
-        throw new NotImplementedException();
+    public sealed override HttpRequest Request => this._requestFunc();
 
     public sealed override CancellationToken RequestAborted
     {
@@ -39,8 +40,7 @@ public sealed class MockHttpContext : HttpContext
         set => throw new NotImplementedException();
     }
 
-    public sealed override HttpResponse Response =>
-        throw new NotImplementedException();
+    public sealed override HttpResponse Response => this._responseFunc();
 
     public sealed override ISession Session
     {
@@ -65,7 +65,10 @@ public sealed class MockHttpContext : HttpContext
 
     public MockHttpContext()
     {
+        this._connectionFunc = () => throw new NotImplementedException();
+        this._requestFunc = () => throw new NotImplementedException();
         this._requestServicesFunc = () => throw new NotImplementedException();
+        this._responseFunc = () => throw new NotImplementedException();
         this._userFunc = () => throw new NotImplementedException();
     }
 

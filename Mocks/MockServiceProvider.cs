@@ -145,49 +145,15 @@ public sealed class MockServiceProvider : IServiceProvider
 
     private Object? GetServiceOptions(Type serviceType)
     {
-        Type optionsType = typeof (IOptions<>);
-        Type? typeArgument;
+        Nullable<(Type TypeArgument, Type MockType)> pair =
+            MockServiceProvider.GetServiceOptionsTypeArgument(serviceType);
 
-        if (serviceType.IsGenericType)
-        {
-            Type genericType = serviceType.GetGenericTypeDefinition();
-
-            if (genericType.Equals(optionsType))
-            {
-                typeArgument =
-                    serviceType
-                        .GetGenericArguments()
-                        .First();
-            }
-
-            else
-            {
-                return null;
-            }
-        }
-
-        else
-        {
-            typeArgument =
-                serviceType
-                    .GetInterfaces()
-                    .FirstOrDefault(i =>
-                    {
-                        if (!i.IsGenericType)
-                        {
-                            return false;
-                        }
-
-                        return i
-                            .GetGenericTypeDefinition()
-                            .Equals(optionsType);
-                    });
-        }
-
-        if (typeArgument is null)
+        if (!pair.HasValue)
         {
             return null;
         }
+
+        (Type typeArgument, Type mockType) = pair.Value;
 
         Type configureOptionsType =
             typeof (IConfigureOptions<>).MakeGenericType(typeArgument);
@@ -217,7 +183,7 @@ public sealed class MockServiceProvider : IServiceProvider
             return instance;
         }
 
-        Type closedType = typeof (MockOptions<>).MakeGenericType(typeArgument);
+        Type closedType = mockType.MakeGenericType(typeArgument);
         Type[] constructorTypes = Array.Empty<Type>();
 
         ConstructorInfo? constructor =
@@ -247,7 +213,7 @@ public sealed class MockServiceProvider : IServiceProvider
         LambdaExpression lambda = Expression.Lambda(funcType, constant);
         Object lambdaCompiled = lambda.Compile();
         field.SetValue(optionsInstance, lambdaCompiled);
-        return optionsInstance;
+        return this.Add(serviceType, optionsInstance);
     }
 
     private bool TryGetEnumerable(Type serviceType, out Object? instance)
@@ -313,6 +279,58 @@ public sealed class MockServiceProvider : IServiceProvider
         }
 
         return true;
+    }
+
+    private static Nullable<(Type ArgumentType, Type MockType)> GetServiceOptionsTypeArgument(Type serviceType)
+    {
+        IReadOnlyDictionary<Type, Type> optionsTypes =
+            new Dictionary<Type, Type>
+            {
+                { typeof (IOptions<>), typeof (MockOptions<>) },
+                {
+                    typeof (IOptionsSnapshot<>),
+                    typeof (MockOptionsSnapshot<>)
+                },
+            };
+
+        foreach (KeyValuePair<Type, Type> optionsType in optionsTypes)
+        {
+            if (serviceType.IsGenericType)
+            {
+                Type genericType = serviceType.GetGenericTypeDefinition();
+
+                if (genericType.Equals(optionsType.Key))
+                {
+                    Type[] typeArguments = serviceType.GetGenericArguments();
+                    return (typeArguments[0], optionsType.Value);
+                }
+            }
+
+            else
+            {
+                Type? typeArgument =
+                    serviceType
+                        .GetInterfaces()
+                        .FirstOrDefault(i =>
+                        {
+                            if (!i.IsGenericType)
+                            {
+                                return false;
+                            }
+
+                            return i
+                                .GetGenericTypeDefinition()
+                                .Equals(optionsType);
+                        });
+
+                if (typeArgument is not null)
+                {
+                    return (typeArgument, optionsType.Value);
+                }
+            }
+        }
+
+        return null;
     }
 
     Object? IServiceProvider.GetService(Type serviceType) =>
