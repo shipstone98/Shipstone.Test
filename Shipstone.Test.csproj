@@ -4,6 +4,7 @@
     <Nullable>enable</Nullable>
     <Version>9.0.1</Version>
     <Authors>Christopher Shipstone</Authors>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
