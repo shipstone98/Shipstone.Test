@@ -11,6 +11,7 @@ public sealed class MockStream : Stream
     public Action _closeAction;
     public Action _flushAction;
     public Func<long> _lengthFunc;
+    public Func<Memory<byte>, int> _readFunc;
     public Action<ReadOnlyMemory<byte>> _writeAction;
 
     public sealed override bool CanRead => throw new NotImplementedException();
@@ -46,6 +47,7 @@ public sealed class MockStream : Stream
         this._closeAction = () => throw new NotImplementedException();
         this._flushAction = () => throw new NotImplementedException();
         this._lengthFunc = () => throw new NotImplementedException();
+        this._readFunc = _ => throw new NotImplementedException();
         this._writeAction = _ => throw new NotImplementedException();
     }
 
@@ -131,8 +133,11 @@ public sealed class MockStream : Stream
     public sealed override ValueTask<int> ReadAsync(
         Memory<byte> buffer,
         CancellationToken cancellationToken = default
-    ) =>
-        throw new NotImplementedException();
+    )
+    {
+        int result = this._readFunc(buffer);
+        return ValueTask.FromResult(result);
+    }
 
     public sealed override int ReadByte() =>
         throw new NotImplementedException();
