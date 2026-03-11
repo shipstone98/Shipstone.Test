@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <Version>9.0.1</Version>
+    <Version>9.0.2</Version>
     <Authors>Christopher Shipstone</Authors>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.13" />
     <PackageReference Include="Shipstone.Utilities" Version="9.0.0" />
     <PackageReference Include="Xunit" Version="2.9.3" />
   </ItemGroup>
